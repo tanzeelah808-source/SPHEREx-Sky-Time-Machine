@@ -20,11 +20,16 @@ function tagValues(xml, tag) {
 }
 
 export default async function (req, res) {
-  const requestedPrefix = String(req.body?.prefix || ROOT_PREFIX);\n  const continuationToken = req.body?.continuationToken == null ? "" : String(req.body.continuationToken);
+  const requestedPrefix = String(req.body?.prefix || ROOT_PREFIX);
+  const continuationToken = req.body?.continuationToken == null
+    ? ""
+    : String(req.body.continuationToken);
+
   if (!requestedPrefix.startsWith(ROOT_PREFIX) ||
       requestedPrefix.includes("..") ||
       requestedPrefix.includes("\\") ||
-      requestedPrefix.length > 240 || continuationToken.length > 4096) {
+      requestedPrefix.length > 240 ||
+      continuationToken.length > 4096) {
     return res.status(400).json({ error: "Prefix must be within the public QR2 level2 archive." });
   }
 
@@ -32,7 +37,8 @@ export default async function (req, res) {
   url.searchParams.set("list-type", "2");
   url.searchParams.set("delimiter", "/");
   url.searchParams.set("prefix", requestedPrefix);
-  url.searchParams.set("max-keys", String(MAX_KEYS));\n  if (continuationToken) url.searchParams.set("continuation-token", continuationToken);
+  url.searchParams.set("max-keys", String(MAX_KEYS));
+  if (continuationToken) url.searchParams.set("continuation-token", continuationToken);
 
   try {
     const response = await fetch(url.toString(), {
@@ -43,10 +49,10 @@ export default async function (req, res) {
       return res.status(502).json({
         error: "AWS public archive listing failed.",
         upstreamStatus: response.status,
-        detail: xml.replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").slice(0, 300)
+        detail: xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 300)
       });
     }
-    if (!/<ListBucketResult\\b/.test(xml)) {
+    if (!/<ListBucketResult\b/.test(xml)) {
       throw new Error("AWS returned an unexpected listing format.");
     }
 
@@ -59,7 +65,7 @@ export default async function (req, res) {
       commonPrefixes: prefixes.filter(value => value !== requestedPrefix),
       keys,
       keyCount: keys.length,
-      truncated: /<IsTruncated>true<\\/IsTruncated>/.test(xml),
+      truncated: xml.includes("<IsTruncated>true</IsTruncated>"),
       nextContinuationToken: tagValues(xml, "NextContinuationToken")[0] || null,
       note: "This endpoint lists real archive object names only. It does not claim that a file covers the selected target; FITS WCS verification is still required."
     });
