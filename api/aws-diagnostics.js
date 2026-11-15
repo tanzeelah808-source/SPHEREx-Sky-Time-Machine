@@ -20,11 +20,11 @@ function tagValues(xml, tag) {
 }
 
 export default async function (req, res) {
-  const requestedPrefix = String(req.body?.prefix || ROOT_PREFIX);
+  const requestedPrefix = String(req.body?.prefix || ROOT_PREFIX);\n  const continuationToken = req.body?.continuationToken == null ? "" : String(req.body.continuationToken);
   if (!requestedPrefix.startsWith(ROOT_PREFIX) ||
       requestedPrefix.includes("..") ||
       requestedPrefix.includes("\\") ||
-      requestedPrefix.length > 240) {
+      requestedPrefix.length > 240 || continuationToken.length > 4096) {
     return res.status(400).json({ error: "Prefix must be within the public QR2 level2 archive." });
   }
 
@@ -32,7 +32,7 @@ export default async function (req, res) {
   url.searchParams.set("list-type", "2");
   url.searchParams.set("delimiter", "/");
   url.searchParams.set("prefix", requestedPrefix);
-  url.searchParams.set("max-keys", String(MAX_KEYS));
+  url.searchParams.set("max-keys", String(MAX_KEYS));\n  if (continuationToken) url.searchParams.set("continuation-token", continuationToken);
 
   try {
     const response = await fetch(url.toString(), {
