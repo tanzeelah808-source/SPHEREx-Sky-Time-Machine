@@ -42,7 +42,8 @@ export default async function (req, res) {
 
   try {
     const response = await fetch(url.toString(), {
-      headers: { Accept: "application/xml" }
+      headers: { Accept: "application/xml" },
+      timeout_ms: 20000
     });
     const xml = await response.text();
     if (!response.ok) {
