@@ -109,11 +109,11 @@ function findWcs(header) {
 
 async function fetchCutout(url) {
   let lastError;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const response = await fetch(url, {
         headers: { Accept: "application/fits, application/octet-stream" },
-        signal: AbortSignal.timeout(18000)
+        timeout_ms: 25000
       });
       if (!response.ok) {
         const body = (await response.text()).slice(0, 180);
@@ -128,11 +128,10 @@ async function fetchCutout(url) {
       return bytes;
     } catch (error) {
       lastError = error;
-      const timedOut = error?.name === "TimeoutError" || error?.name === "AbortError";
-      const retryable = !timedOut && (error?.retryable === true ||
-        (!error?.message?.startsWith("IRSA returned HTTP ") && !error?.message?.includes("valid FITS")));
-      if (!retryable || attempt === 1) break;
-      await new Promise(resolve => setTimeout(resolve, 400));
+      const retryable = error?.retryable === true ||
+        (!error?.message?.startsWith("IRSA returned HTTP ") && !error?.message?.includes("valid FITS"));
+      if (!retryable || attempt === 2) break;
+      await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 700 : 1500));
     }
   }
   throw lastError || new Error("Could not retrieve the FITS cutout.");
@@ -187,14 +186,7 @@ export default async function (req, res) {
         layers[name.toLowerCase()] = image.values;
 
         if (name === "IMAGE") {
-          let imageMin = Infinity;
-          let imageMax = -Infinity;
-          for (const value of image.values) {
-            if (Number.isFinite(value)) {
-              if (value < imageMin) imageMin = value;
-              if (value > imageMax) imageMax = value;
-            }
-          }
+          const finite = image.values.filter(Number.isFinite).sort((a, b) => a - b);
           metadata = {
             width: image.width,
             height: image.height,
@@ -203,8 +195,8 @@ export default async function (req, res) {
             mjdObs: header["MJD-OBS"] || null,
             unit: header.BUNIT || null,
             psfFwhm: header.PSF_FWHM ?? null,
-            imageMin: imageMin === Infinity ? null : imageMin,
-            imageMax: imageMax === -Infinity ? null : imageMax,
+            imageMin: finite.length ? finite[0] : null,
+            imageMax: finite.length ? finite[finite.length - 1] : null,
             wcs: findWcs(header)
           };
         }

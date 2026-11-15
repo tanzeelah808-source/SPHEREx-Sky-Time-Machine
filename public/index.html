@@ -17,6 +17,23 @@ input,select{width:100%;background:#081221;border:1px solid #30445f;border-radiu
 .hint{font-size:11px;color:var(--muted);margin-top:10px}.status{padding:12px;border:1px solid var(--line);border-radius:10px;color:var(--muted);background:#0a1423;margin-bottom:15px;overflow-wrap:anywhere}.status.good{border-color:#28634e;color:var(--green)}.status.bad{border-color:#704a3b;color:var(--amber)}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:15px}.stat{background:#0a1423;border:1px solid var(--line);border-radius:11px;padding:12px}.stat b{display:block;font-size:22px;color:var(--cyan)}.stat span{font-size:11px;color:var(--muted)}
 .checks{display:grid;gap:7px;padding:10px;background:#0a1423;border:1px solid var(--line);border-radius:10px}.check{display:flex;align-items:flex-start;gap:9px;color:#d5e3f6;font-size:12px;margin:0;font-weight:500}.check input{width:auto;margin:3px 0 0;accent-color:#67e8f9}.tablewrap{overflow:auto}#archive-results-menu{margin-top:12px;border:1px solid #30445f;border-radius:10px;background:#0a1423;overflow:hidden}#archive-results-menu summary{padding:11px 13px;color:#d8efff;font-size:12px;font-weight:750;cursor:pointer;list-style:none}#archive-results-menu summary::-webkit-details-marker{display:none}#archive-results-menu summary:after{content:"＋";float:right;color:#67e8f9}#archive-results-menu[open] summary:after{content:"−"}#archive-results-menu #results{padding:0 12px 12px}#archive-results-menu .tablewrap{max-height:360px;overflow:auto}table{width:100%;border-collapse:collapse;font-size:12px;min-width:680px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #26364c;vertical-align:top;overflow-wrap:anywhere}th{color:#a9bdd8;font-size:10px;text-transform:uppercase;letter-spacing:.08em}a{color:var(--cyan)}.empty{padding:36px 15px;text-align:center;color:var(--muted);border:1px dashed #30445f;border-radius:12px}.failure{margin:10px 0;padding:10px;border:1px solid #704a3b;border-radius:9px;color:var(--amber);font-size:12px;overflow-wrap:anywhere}.view-cutout{margin-top:6px;padding:6px 9px;border:1px solid #43869b;border-radius:7px;background:#102d3a;color:#8eeeff;font:700 11px inherit;cursor:pointer}.viewer-wrap{max-width:1180px;margin:0 auto 30px;padding:0 22px}.viewer-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0}.viewer-controls select,.viewer-controls button{width:auto;margin:0}.viewer-controls button{padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#0a1423;color:var(--text);cursor:pointer}.viewer-controls select{min-width:180px}.viewer-canvas-wrap{background:#050a12;border:1px solid var(--line);border-radius:12px;overflow:hidden}.viewer-canvas-wrap canvas{display:block;width:100%;height:600px;cursor:grab;touch-action:none}.viewer-canvas-wrap canvas:active{cursor:grabbing}.viewer-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:12px}.viewer-meta div{padding:10px;background:#0a1423;border:1px solid var(--line);border-radius:9px;min-width:0}.viewer-meta span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}.viewer-meta strong{display:block;margin-top:3px;font-size:12px;overflow-wrap:anywhere}.foot{max-width:1180px;margin:-8px auto 30px;padding:0 22px;color:#8293ad;font-size:11px}
+.observation-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,320px);gap:14px;align-items:start;margin-top:14px}
+.observation-image-column{min-width:0}
+.observation-data-column{display:grid;gap:12px;min-width:0;max-height:560px;overflow-y:auto;padding-right:3px}
+.data-card{min-width:0;padding:13px;background:linear-gradient(145deg,#111d30,#0b1422);border:1px solid #2b405b;border-radius:12px}
+.data-card-heading{display:flex;flex-direction:column;gap:2px;margin-bottom:10px}
+.data-card-heading strong{color:#dff8ff;font-size:12px;letter-spacing:.04em}
+.data-card-heading span{color:#829bb6;font-size:10px}
+#epoch-target-data{grid-template-columns:1fr;margin-top:0}
+#epoch-target-data div{padding:9px 10px}
+#epoch-target-data .coordinate-cell{border-color:#34738a;background:#0c2634}
+#epoch-target-data .coordinate-cell strong{color:#8eeeff;font-size:14px}
+.viewer-meta{grid-template-columns:1fr;margin-top:0}
+.viewer-meta div{padding:9px 10px}
+.image-help{margin:9px 2px 0}
+@media(max-width:900px){.observation-layout{grid-template-columns:minmax(0,1fr) 280px}.observation-data-column{max-height:520px}}
+@media(max-width:760px){main{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.observation-layout{grid-template-columns:1fr}.observation-data-column{max-height:none;overflow:visible;grid-template-columns:1fr 1fr}.viewer-canvas-wrap canvas{height:clamp(300px,68vw,460px)!important}}
+@media(max-width:520px){.observation-data-column{grid-template-columns:1fr}.viewer-wrap{padding:0 12px}.panel{padding:15px}}
 @media(max-width:850px){main{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -28,7 +45,7 @@ input,select{width:100%;background:#081221;border:1px solid #30445f;border-radiu
 <label for="target">Challenge target</label>
 <select id="target">
 <option value="custom">Custom coordinates</option><option value="wise">WISE 0855</option>
-<option value="barnard">Barnard’s Star</option><option value="epsilon">Epsilon Indi B (enter coordinates)</option>
+<option value="barnard">Barnard’s Star</option><option value="epsilon">Epsilon Indi B (Ba/Bb)</option>
 <option value="rwaur">RW Aurigae (enter coordinates)</option><option value="rdraco">R Draconis (enter coordinates)</option>
 </select>
 <div class="grid2"><div><label for="ra">Right Ascension (deg)</label><input id="ra" type="number" step="any" value="133.795129"></div><div><label for="dec">Declination (deg)</label><input id="dec" type="number" step="any" value="-7.245147"></div></div>
@@ -46,7 +63,7 @@ input,select{width:100%;background:#081221;border:1px solid #30445f;border-radiu
 <h3>Wavelength range (optional)</h3>
 <div class="grid2"><div><label for="waveMin">Minimum (µm)</label><input id="waveMin" type="number" min="0" step="any" placeholder="e.g. 1.0"></div><div><label for="waveMax">Maximum (µm)</label><input id="waveMax" type="number" min="0" step="any" placeholder="e.g. 2.4"></div></div>
 <button class="primary" id="search">SEARCH LIVE SPHEREX ARCHIVE ↗</button>
-<div class="hint">Coordinates use ICRS. WISE 0855 uses its catalogued J2000 position; Barnard’s Star is propagated from its J2000 catalog position using SIMBAD proper motion to reference epoch 2026.0. Other targets currently require manual coordinates. Choose collections explicitly. Dates and wavelengths are optional. The DR1 cube collection is a separate all-sky product.</div>
+<div class="hint">Coordinates use ICRS. WISE 0855, Barnard’s Star, RW Aurigae, and R Draconis use catalog proper motions; Epsilon Indi B uses its SIMBAD position with the primary star’s systemic proper motion as an approximate bound-system proxy. Positions are propagated linearly to each observation epoch; parallax and orbital motion are not included. Other targets remain fixed until a verified motion model is added. Choose collections explicitly. Dates and wavelengths are optional. The DR1 cube collection is a separate all-sky product.</div>
 </section>
 <section class="panel">
 <h2>02 / Archive results</h2>
@@ -86,21 +103,37 @@ input,select{width:100%;background:#081221;border:1px solid #30445f;border-radiu
   <div class="timeline-caption" id="timeline-caption">Search the archive to build a chronological sequence.</div>
   <div class="timeline-note">Auto Highlights samples up to 12 epochs across the complete time range. All Observations keeps every grouped epoch available. Products sharing an observation ID are grouped into one epoch; use Product to switch wavelength products.</div>
 </div>
-<div class="viewer-canvas-wrap"><canvas id="fits-canvas" aria-label="SPHEREx FITS image cutout"></canvas></div>
-<div class="viewer-meta" id="fits-meta"></div>
-<p class="hint">The red cross marks the target's ICRS position at the selected observation epoch when a verified proper-motion model is available; otherwise it marks the searched coordinate. Barnard's Star uses linear proper-motion propagation from its J2000.0 catalog position (no parallax or radial-velocity correction). SPHEREx false colour visualizes infrared detector intensity; Pan-STARRS real sky colour is a separate, static stacked visible-light g/r/i survey reference. It does not change between SPHEREx epochs and cannot show epoch-to-epoch motion. It is not SPHEREx data, and coverage is not available everywhere.</p>
+<div class="observation-layout">
+  <div class="observation-image-column">
+    <div class="viewer-canvas-wrap"><canvas id="fits-canvas" aria-label="SPHEREx FITS image cutout"></canvas></div>
+    <p class="hint image-help">The red cross marks the target's ICRS position at the selected observation epoch when a verified proper-motion model is available; otherwise it marks the searched coordinate. SPHEREx false colour visualizes infrared detector intensity. Pan-STARRS real sky colour is a separate, static visible-light g/r/i reference, not SPHEREx data, and does not change between epochs.</p>
+  </div>
+  <aside class="observation-data-column" aria-label="Selected observation data">
+    <section class="data-card">
+      <div class="data-card-heading"><strong>Target &amp; epoch</strong><span>Updates with each observation</span></div>
+      <div id="epoch-target-data" class="epoch-data" aria-live="polite"></div>
+    </section>
+    <section class="data-card">
+      <div class="data-card-heading"><strong>FITS product metadata</strong><span>From the loaded archive product</span></div>
+      <div class="viewer-meta" id="fits-meta"></div>
+    </section>
+  </aside>
+</div>
 </section>
 </div>
 <div class="foot">Data source: NASA/IPAC Infrared Science Archive (IRSA), SPHEREx SIA2 and IBE. The viewer extracts real FITS image, variance, quality-flag, and zodiacal layers from archive cutouts. Full FITS products remain available through their archive links.</div>
-<script src="/viewer.js?v=27" defer></script>
-<script src="/timeline.js?v=23" defer></script>
+<script src="/viewer.js?v=28" defer></script>
+<script src="/timeline.js?v=27" defer></script>
 <script>
 const $=id=>document.getElementById(id);
 const collectionInputs=[...document.querySelectorAll('input[name="collection"]')];
 $("target").addEventListener("change",e=>{
   const presets={
     wise:{ra:"133.795129",dec:"-7.245147"},
-    barnard:{ra:"269.446269",dec:"4.768204"}
+    barnard:{ra:"269.446269",dec:"4.768204"},
+    epsilon:{ra:"331.0964419304",dec:"-56.8011611373"},
+    rwaur:{ra:"76.9565865756",dec:"30.4012913461"},
+    rdraco:{ra:"248.1672330728",dec:"66.7550238267"}
   };
   const preset=presets[e.target.value];
   if(preset){$("ra").value=preset.ra;$("dec").value=preset.dec;}

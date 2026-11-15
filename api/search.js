@@ -98,15 +98,17 @@ async function queryCollection(collection, ra, dec, radius, filters) {
   }
 
   let lastError;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const response = await fetch(url.toString(), {
         headers: { Accept: "application/x-votable+xml, text/xml" }
       });
       const responseText = await response.text();
       if (!response.ok) {
-        throw new Error("IRSA HTTP " + response.status + " (" + collection + "): " +
+        const error = new Error("IRSA HTTP " + response.status + " (" + collection + "): " +
           responseText.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 220));
+        error.retryable = [429, 502, 503, 504].includes(response.status);
+        throw error;
       }
       if (responseText.trim().startsWith("{")) {
         const parsed = JSON.parse(responseText);
@@ -117,7 +119,10 @@ async function queryCollection(collection, ra, dec, radius, filters) {
       return parseVOTable(responseText, collection);
     } catch (error) {
       lastError = error;
-      if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 500));
+      const transient = error?.retryable === true ||
+        (error?.retryable === undefined && !(error?.message || "").startsWith("IRSA HTTP "));
+      if (!transient || attempt === 2) break;
+      await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 600 : 1500));
     }
   }
   throw lastError || new Error("Unknown IRSA query failure.");

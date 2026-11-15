@@ -37,11 +37,8 @@
   const summary = document.getElementById("timeline-summary");
   const indexLabel = document.getElementById("timeline-index");
   const caption = document.getElementById("timeline-caption");
-  const targetData = document.createElement("div");
-  targetData.className = "epoch-data";
-  targetData.id = "epoch-target-data";
-  targetData.setAttribute("aria-live", "polite");
-  caption.insertAdjacentElement("afterend", targetData);
+  const targetData = document.getElementById("epoch-target-data");
+  if (targetData) targetData.setAttribute("aria-live", "polite");
   let targetKey = "custom";
   let properMotionModel = null;
   let epochs = [];
@@ -82,6 +79,59 @@
   // SIMBAD-style proper motion: pmRA is mu_alpha*cos(dec), in mas/year.
   // Barnard's Star catalog reference position is ICRS at J2000.0.
   const TARGET_MODELS = {
+    epsilon: {
+      name: "Epsilon Indi B (Ba/Bb; systemic PM)",
+      // SIMBAD J2000 position for Epsilon Indi B. Its component page does
+      // not publish a separate PM here, so use the Gaia DR3 primary's
+      // systemic proper motion as an explicitly approximate bound-system proxy.
+      ra0: 331.0441465885,
+      dec0: -56.7828441951,
+      pmRa: 3966.661,
+      pmDec: -2536.192,
+      referenceEpoch: 2000.0,
+      searchEpoch: 2026.0,
+      searchRa: 331.0964419304,
+      searchDec: -56.8011611373
+    },
+    rwaur: {
+      name: "RW Aurigae",
+      // SIMBAD J2000 ICRS position and proper motion, from
+      // 2007A&A...474..653V; pmRA = mu_alpha*cos(dec), mas/year.
+      ra0: 76.9565260346,
+      dec0: 30.4014381739,
+      pmRa: 7.23,
+      pmDec: -20.33,
+      referenceEpoch: 2000.0,
+      searchEpoch: 2026.0,
+      searchRa: 76.9565865756,
+      searchDec: 30.4012913461
+    },
+    rdraco: {
+      name: "R Draconis",
+      // SIMBAD/Gaia DR3 J2000 ICRS position and proper motion;
+      // pmRA = mu_alpha*cos(dec), mas/year.
+      ra0: 248.1676108330,
+      dec0: 66.7549794172,
+      pmRa: -20.643,
+      pmDec: 6.149,
+      referenceEpoch: 2000.0,
+      searchEpoch: 2026.0,
+      searchRa: 248.1672330728,
+      searchDec: 66.7550238267
+    },
+    wise: {
+      name: "WISE 0855−0714",
+      // SIMBAD/Kirkpatrick et al. 2021: ICRS J2000 position and
+      // proper motion (mu_alpha*cos(dec), mu_delta), in mas/year.
+      ra0: 133.795132,
+      dec0: -7.245146,
+      pmRa: -8123.7,
+      pmDec: 673.2,
+      referenceEpoch: 2000.0,
+      searchEpoch: 2026.0,
+      searchRa: 133.795129,
+      searchDec: -7.245147
+    },
     barnard: {
       name: "Barnard's Star",
       ra0: 269.452077,
@@ -129,21 +179,21 @@
       : "Not configured for this target";
     const cells = [
       ["Target", properMotionModel ? properMotionModel.name : targetKey],
+      ["Right Ascension (ICRS)", position.ra.toFixed(8) + "°"],
+      ["Declination (ICRS)", (position.dec >= 0 ? "+" : "") + position.dec.toFixed(8) + "°"],
       ["Motion model", position.propagated ? "Active · linear proper-motion propagation" : "Inactive · fixed search coordinates"],
       ["Observation epoch", "J" + position.year.toFixed(6)],
       ["Observation date (UTC)", utcFromMjd(epoch.mjd)],
       ["MJD", Number(epoch.mjd).toFixed(6)],
       ["Collection", record?.collection || "Not supplied"],
-      ["Right Ascension (ICRS)", position.ra.toFixed(8) + "°"],
-      ["Declination (ICRS)", (position.dec >= 0 ? "+" : "") + position.dec.toFixed(8) + "°"],
-      ["Position shift", displacement],
       ["Spectral band", band],
       ["Wavelength range", wavelength],
       ["Observation ID", epoch.observationId || "Not supplied"],
+      ["Position shift", displacement],
       ["Proper motion", properMotion]
     ];
     targetData.innerHTML = cells.map(([label, value]) =>
-      '<div><span>' + label + '</span><strong>' +
+      '<div class="' + (label === "Right Ascension (ICRS)" || label === "Declination (ICRS)" ? "coordinate-cell" : "") + '"><span>' + label + '</span><strong>' +
       String(value).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])) +
       '</strong></div>'
     ).join("");
@@ -207,11 +257,18 @@
     // Keep only a short look-ahead. Preloading the entire timeline can
     // launch more than a hundred archive requests for a single search.
     const lookAhead = Math.min(1, epochs.length - 1);
+    const currentRecord = epochs[index]?.products?.[activeProduct];
+    const preferredIdentity = productIdentity(currentRecord);
     for (let offset = 1; offset <= lookAhead; offset++) {
       const epoch = epochs[index + offset];
       if (!epoch) continue;
-      const record = epoch?.products?.[0];
-      const coordinates = epoch ? positionForEpoch(epoch.mjd) : searchCoordinates;
+      // Preload the same spectral product the viewer will preserve on the
+      // next epoch, rather than blindly warming products[0].
+      const matchingIndex = preferredIdentity
+        ? epoch.products.findIndex(item => productIdentity(item) === preferredIdentity)
+        : -1;
+      const record = epoch.products?.[matchingIndex >= 0 ? matchingIndex : 0];
+      const coordinates = positionForEpoch(epoch.mjd);
       const key = record?.access_url + "|" + coordinates.ra + "|" + coordinates.dec;
       if (record && record.access_url && !queuedPreloads.has(key)) {
         queuedPreloads.add(key);
@@ -356,13 +413,22 @@
     modeSelect.value = "highlights";
     epochs = chooseSequence(allEpochs, "highlights");
     searchCoordinates = { ra, dec };
-    targetKey = selectedTarget;
+    // Prefer the explicit preset selection. If the user entered a known
+    // preset's coordinates manually while the selector still says Custom,
+    // recover the identity from a tight catalog-position match.
+    const selectedModel = TARGET_MODELS[selectedTarget];
+    const inferredKey = !selectedModel && selectedTarget === "custom"
+      ? Object.keys(TARGET_MODELS).find(key =>
+          Math.abs(ra - TARGET_MODELS[key].searchRa) < 0.001 &&
+          Math.abs(dec - TARGET_MODELS[key].searchDec) < 0.001)
+      : null;
+    targetKey = selectedModel ? selectedTarget : (inferredKey || selectedTarget || "custom");
     const model = TARGET_MODELS[targetKey];
-    // The preset identity is the primary selector. Allow harmless
-    // coordinate rounding while rejecting manually changed coordinates.
+    // Allow tiny input rounding, but don't activate a model for a nearby
+    // unrelated coordinate.
     properMotionModel = model &&
-      Math.abs(ra - model.searchRa) < 0.01 &&
-      Math.abs(dec - model.searchDec) < 0.01
+      Math.abs(ra - model.searchRa) < 0.001 &&
+      Math.abs(dec - model.searchDec) < 0.001
         ? model
         : null;
     targetData.innerHTML = "";
